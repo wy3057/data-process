@@ -13,11 +13,25 @@ logger = logging.getLogger(__name__)
 SESSION_HOURS = 8
 
 
-def _layout(title: str, body: str, username: str | None = None) -> str:
+NAV_ITEMS = [
+    ("/", "首页"),
+    ("/categories", "分类管理"),
+    ("/records", "实验记录"),
+    ("/data", "数据录入"),
+    ("/query", "查询统计"),
+    ("/export", "导出"),
+]
+
+
+def _layout(title: str, body: str, current_path: str, username: str | None = None) -> str:
     auth = (
-        f"<span>当前用户：{escape(username or '')}</span> <a href='/logout'>退出</a>"
+        f"<span>当前用户：{escape(username or '')}</span> <a class='link' href='/logout'>退出</a>"
         if username
-        else "<a href='/login'>登录</a> <a href='/register'>注册</a>"
+        else "<a class='link' href='/login'>登录</a> <a class='link' href='/register'>注册</a>"
+    )
+    nav_html = "".join(
+        f"<a class='nav-item {'active' if current_path == path else ''}' href='{path}'>{name}</a>"
+        for path, name in NAV_ITEMS
     )
     return f"""<!doctype html>
 <html lang='zh-CN'>
@@ -26,33 +40,70 @@ def _layout(title: str, body: str, username: str | None = None) -> str:
   <meta name='viewport' content='width=device-width, initial-scale=1' />
   <title>{escape(title)}</title>
   <style>
-    body {{ font-family: Arial, sans-serif; margin: 20px; background:#f7f7fb; }}
-    .card {{ background:#fff; border-radius:8px; padding:16px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.08); }}
-    h1,h2 {{ margin: 0 0 12px; }}
-    input,select {{ padding:6px; margin:4px 6px 8px 0; min-width: 140px; }}
-    button {{ padding:6px 12px; }}
-    table {{ border-collapse: collapse; width: 100%; background:#fff; }}
-    th,td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-    th {{ background: #fafafa; }}
-    .msg {{ color: #0a7f28; margin-bottom: 8px; }}
-    .err {{ color: #b00020; margin-bottom: 8px; }}
-    nav a {{ margin-right:10px; }}
-    .topbar {{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }}
+    :root {{
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e5e7eb;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --success: #16a34a;
+      --danger: #dc2626;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{ margin: 0; font-family: Inter, Arial, sans-serif; color: var(--text); background: var(--bg); }}
+    .container {{ max-width: 1180px; margin: 0 auto; padding: 20px; }}
+    .topbar {{
+      position: sticky; top: 0; z-index: 10; margin-bottom: 16px;
+      background: rgba(245,247,251,.95); backdrop-filter: blur(3px);
+      border-bottom: 1px solid var(--border); padding: 10px 0;
+    }}
+    .topbar-inner {{ max-width: 1180px; margin: 0 auto; padding: 0 20px; display:flex; justify-content:space-between; align-items:center; gap:10px; }}
+    nav {{ display: flex; flex-wrap: wrap; gap: 8px; }}
+    .nav-item {{ text-decoration: none; color: var(--text); padding: 7px 12px; border-radius: 8px; border: 1px solid transparent; }}
+    .nav-item:hover {{ background: #eef2ff; }}
+    .nav-item.active {{ background: var(--primary-soft); color: var(--primary); border-color: #bfdbfe; font-weight: 600; }}
+    .link {{ color: var(--primary); text-decoration: none; margin-left: 8px; }}
+
+    .card {{ background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(17,24,39,.04); }}
+    h1 {{ margin: 0 0 10px; font-size: 24px; }}
+    h2 {{ margin: 0 0 12px; font-size: 20px; }}
+    p {{ margin: 0; color: var(--muted); }}
+
+    .grid-3 {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }}
+    .stat {{ background: linear-gradient(180deg, #fff, #f9fafb); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }}
+    .stat .k {{ font-size: 12px; color: var(--muted); margin-bottom: 4px; }}
+    .stat .v {{ font-size: 22px; font-weight: 700; color: var(--primary); }}
+
+    .form-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; align-items: end; }}
+    .form-field {{ display: flex; flex-direction: column; gap: 6px; }}
+    label {{ font-size: 12px; color: var(--muted); }}
+    input, select {{ width: 100%; padding: 9px 10px; border-radius: 9px; border: 1px solid #d1d5db; background: #fff; }}
+    button {{ padding: 9px 12px; border-radius: 9px; border: 1px solid #1d4ed8; background: var(--primary); color: white; cursor: pointer; }}
+    button.secondary {{ background: #fff; color: var(--text); border-color: #d1d5db; }}
+
+    .msg {{ color: var(--success); background: #ecfdf3; border: 1px solid #bbf7d0; border-radius: 9px; padding: 8px 10px; margin-bottom: 10px; }}
+    .err {{ color: var(--danger); background: #fef2f2; border: 1px solid #fecaca; border-radius: 9px; padding: 8px 10px; margin-bottom: 10px; }}
+
+    .table-wrap {{ overflow: auto; border-radius: 10px; border: 1px solid var(--border); }}
+    table {{ border-collapse: collapse; width: 100%; min-width: 760px; background: #fff; }}
+    th, td {{ border-bottom: 1px solid var(--border); padding: 9px 10px; text-align: left; }}
+    th {{ background: #f9fafb; font-weight: 600; }}
+
+    @media (max-width: 900px) {{ .grid-3 {{ grid-template-columns: 1fr; }} }}
   </style>
 </head>
 <body>
 <div class='topbar'>
-  <nav>
-    <a href='/'>首页</a>
-    <a href='/categories'>分类管理</a>
-    <a href='/records'>实验记录</a>
-    <a href='/data'>数据录入</a>
-    <a href='/query'>查询统计</a>
-    <a href='/export'>导出</a>
-  </nav>
-  <div>{auth}</div>
+  <div class='topbar-inner'>
+    <nav>{nav_html}</nav>
+    <div>{auth}</div>
+  </div>
 </div>
+<div class='container'>
 {body}
+</div>
 </body>
 </html>"""
 
@@ -60,7 +111,7 @@ def _layout(title: str, body: str, username: str | None = None) -> str:
 def _table(headers: list[str], rows: list[list[str]]) -> str:
     head = "".join(f"<th>{escape(h)}</th>" for h in headers)
     body = "".join("<tr>" + "".join(f"<td>{escape(str(c))}</td>" for c in row) + "</tr>" for row in rows)
-    return f"<table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>"
+    return f"<div class='table-wrap'><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table></div>"
 
 
 def _read_post(environ: dict) -> dict[str, str]:
@@ -166,17 +217,18 @@ def create_app(system: ExperimentDataSystem):
                     except Exception as exc:
                         err = str(exc)
                 body = f"""
-                <div class='card'>
+                <div class='card' style='max-width:520px;margin:40px auto;'>
                   <h2>用户注册</h2>
+                  <p style='margin-bottom:12px;'>创建一个新账号后即可开始管理你的实验数据。</p>
                   {f"<div class='err'>{escape(err)}</div>" if err else ""}
-                  <form method='post'>
-                    <input name='username' placeholder='用户名(字母数字下划线，3-32位)' required />
-                    <input name='password' type='password' placeholder='密码(至少6位)' required />
+                  <form method='post' class='form-grid'>
+                    <div class='form-field'><label>用户名</label><input name='username' placeholder='字母数字下划线，3-32位' required /></div>
+                    <div class='form-field'><label>密码</label><input name='password' type='password' placeholder='至少6位' required /></div>
                     <button type='submit'>注册</button>
                   </form>
                 </div>
                 """
-                html = _layout("注册", body, username)
+                html = _layout("注册", body, path, username)
                 start_response("200 OK", [("Content-Type", "text/html; charset=utf-8")])
                 return [html.encode("utf-8")]
 
@@ -187,24 +239,21 @@ def create_app(system: ExperimentDataSystem):
                     user = system.users.authenticate(form.get("username", ""), form.get("password", ""))
                     if user:
                         sid = _session_create(system, int(user["id"]))
-                        return _redirect(
-                            start_response,
-                            "/",
-                            [("Set-Cookie", _cookie_header(sid, secure=secure_cookie))],
-                        )
+                        return _redirect(start_response, "/", [("Set-Cookie", _cookie_header(sid, secure=secure_cookie))])
                     err = "用户名或密码错误"
                 body = f"""
-                <div class='card'>
+                <div class='card' style='max-width:520px;margin:40px auto;'>
                   <h2>用户登录</h2>
+                  <p style='margin-bottom:12px;'>登录后可访问分类、记录、数据录入与统计导出功能。</p>
                   {f"<div class='err'>{escape(err)}</div>" if err else ""}
-                  <form method='post'>
-                    <input name='username' placeholder='用户名' required />
-                    <input name='password' type='password' placeholder='密码' required />
+                  <form method='post' class='form-grid'>
+                    <div class='form-field'><label>用户名</label><input name='username' placeholder='请输入用户名' required /></div>
+                    <div class='form-field'><label>密码</label><input name='password' type='password' placeholder='请输入密码' required /></div>
                     <button type='submit'>登录</button>
                   </form>
                 </div>
                 """
-                html = _layout("登录", body, username)
+                html = _layout("登录", body, path, username)
                 start_response("200 OK", [("Content-Type", "text/html; charset=utf-8")])
                 return [html.encode("utf-8")]
 
@@ -217,13 +266,21 @@ def create_app(system: ExperimentDataSystem):
                 return _redirect(start_response, "/login")
 
             if path == "/":
+                cat_count = len(system.categories.list_categories(owner_id=user_id))
+                rec_count = len(system.records.list_records(owner_id=user_id))
+                data_count = len(system.data.query_data(owner_id=user_id))
                 body = f"""
                 <div class='card'>
-                  <h1>实验数据管理系统 Web UI</h1>
-                  <p>欢迎你，{escape(username or '')}。当前为多用户模式，页面数据已按用户隔离。</p>
+                  <h1>实验数据管理系统</h1>
+                  <p>欢迎你，{escape(username or '')}。这里是你的个人实验数据工作台。</p>
+                </div>
+                <div class='grid-3'>
+                  <div class='stat'><div class='k'>分类总数</div><div class='v'>{cat_count}</div></div>
+                  <div class='stat'><div class='k'>实验记录数</div><div class='v'>{rec_count}</div></div>
+                  <div class='stat'><div class='k'>数据条目数</div><div class='v'>{data_count}</div></div>
                 </div>
                 """
-                html = _layout("首页", body, username)
+                html = _layout("首页", body, path, username)
 
             elif path == "/categories":
                 if method == "POST":
@@ -231,57 +288,44 @@ def create_app(system: ExperimentDataSystem):
                     system.categories.add_category(form.get("name", ""), form.get("description", ""), owner_id=user_id)
                     msg = "分类新增成功"
                 rows = system.categories.list_categories(owner_id=user_id)
-                table = _table(
-                    ["ID", "名称", "描述", "创建时间"],
-                    [[r["id"], r["name"], r["description"] or "", r["created_at"]] for r in rows],
-                )
+                table = _table(["ID", "名称", "描述", "创建时间"], [[r["id"], r["name"], r["description"] or "", r["created_at"]] for r in rows])
                 body = f"""
                 <div class='card'>
                   <h2>分类管理</h2>
                   {f"<div class='msg'>{escape(msg)}</div>" if msg else ""}
-                  <form method='post'>
-                    <input name='name' placeholder='分类名称' required />
-                    <input name='description' placeholder='描述' />
+                  <form method='post' class='form-grid'>
+                    <div class='form-field'><label>分类名称</label><input name='name' placeholder='例如：化学实验' required /></div>
+                    <div class='form-field'><label>描述</label><input name='description' placeholder='分类说明（可选）' /></div>
                     <button type='submit'>新增分类</button>
                   </form>
                 </div>
                 <div class='card'>{table}</div>
                 """
-                html = _layout("分类管理", body, username)
+                html = _layout("分类管理", body, path, username)
 
             elif path == "/records":
                 if method == "POST":
                     form = _read_post(environ)
-                    system.records.add_record(
-                        form.get("title", ""),
-                        form.get("researcher", ""),
-                        form.get("experiment_date", ""),
-                        form.get("status", "running"),
-                        form.get("notes", ""),
-                        owner_id=user_id,
-                    )
+                    system.records.add_record(form.get("title", ""), form.get("researcher", ""), form.get("experiment_date", ""), form.get("status", "running"), form.get("notes", ""), owner_id=user_id)
                     msg = "实验记录新增成功"
                 rows = system.records.list_records(owner_id=user_id)
-                table = _table(
-                    ["ID", "标题", "负责人", "实验日期", "状态", "备注"],
-                    [[r["id"], r["title"], r["researcher"], r["experiment_date"], r["status"], r["notes"] or ""] for r in rows],
-                )
+                table = _table(["ID", "标题", "负责人", "实验日期", "状态", "备注"], [[r["id"], r["title"], r["researcher"], r["experiment_date"], r["status"], r["notes"] or ""] for r in rows])
                 body = f"""
                 <div class='card'>
                   <h2>实验记录管理</h2>
                   {f"<div class='msg'>{escape(msg)}</div>" if msg else ""}
-                  <form method='post'>
-                    <input name='title' placeholder='标题' required />
-                    <input name='researcher' placeholder='负责人' required />
-                    <input name='experiment_date' placeholder='实验日期 如 2026-01-10' required />
-                    <input name='status' placeholder='状态 running' value='running' required />
-                    <input name='notes' placeholder='备注' />
+                  <form method='post' class='form-grid'>
+                    <div class='form-field'><label>标题</label><input name='title' required /></div>
+                    <div class='form-field'><label>负责人</label><input name='researcher' required /></div>
+                    <div class='form-field'><label>实验日期</label><input name='experiment_date' placeholder='2026-01-10' required /></div>
+                    <div class='form-field'><label>状态</label><input name='status' value='running' required /></div>
+                    <div class='form-field'><label>备注</label><input name='notes' /></div>
                     <button type='submit'>新增记录</button>
                   </form>
                 </div>
                 <div class='card'>{table}</div>
                 """
-                html = _layout("实验记录", body, username)
+                html = _layout("实验记录", body, path, username)
 
             elif path == "/data":
                 if method == "POST":
@@ -303,20 +347,20 @@ def create_app(system: ExperimentDataSystem):
                 <div class='card'>
                   <h2>实验数据录入</h2>
                   {f"<div class='msg'>{escape(msg)}</div>" if msg else ""}
-                  <form method='post'>
-                    <input name='data_name' placeholder='数据名' required />
-                    <input name='category_id' placeholder='分类ID' required />
-                    <input name='value' placeholder='数值' required />
-                    <input name='unit' placeholder='单位' required />
-                    <input name='recorded_at' placeholder='记录时间 2026-01-10 09:00:00' required />
-                    <input name='operator' placeholder='操作人' required />
-                    <input name='record_id' placeholder='记录ID(可空)' />
-                    <input name='remarks' placeholder='备注' />
+                  <form method='post' class='form-grid'>
+                    <div class='form-field'><label>数据名</label><input name='data_name' required /></div>
+                    <div class='form-field'><label>分类ID</label><input name='category_id' required /></div>
+                    <div class='form-field'><label>数值</label><input name='value' required /></div>
+                    <div class='form-field'><label>单位</label><input name='unit' required /></div>
+                    <div class='form-field'><label>记录时间</label><input name='recorded_at' placeholder='2026-01-10 09:00:00' required /></div>
+                    <div class='form-field'><label>操作人</label><input name='operator' required /></div>
+                    <div class='form-field'><label>记录ID</label><input name='record_id' placeholder='可空' /></div>
+                    <div class='form-field'><label>备注</label><input name='remarks' /></div>
                     <button type='submit'>录入数据</button>
                   </form>
                 </div>
                 """
-                html = _layout("数据录入", body, username)
+                html = _layout("数据录入", body, path, username)
 
             elif path == "/query":
                 params = parse_qs(environ.get("QUERY_STRING", ""))
@@ -328,51 +372,26 @@ def create_app(system: ExperimentDataSystem):
 
                 if mode == "stats":
                     rows = system.data.stats_by_category(owner_id=user_id)
-                    table = _table(
-                        ["分类ID", "分类名", "数量", "均值", "最小值", "最大值"],
-                        [[r["category_id"], r["category_name"], r["data_count"], r["avg_value"], r["min_value"], r["max_value"]] for r in rows],
-                    )
+                    table = _table(["分类ID", "分类名", "数量", "均值", "最小值", "最大值"], [[r["category_id"], r["category_name"], r["data_count"], r["avg_value"], r["min_value"], r["max_value"]] for r in rows])
                 else:
-                    rows = system.data.query_data(
-                        category_id=int(cat) if cat else None,
-                        keyword=keyword or None,
-                        date_start=date_start or None,
-                        date_end=date_end or None,
-                        owner_id=user_id,
-                    )
-                    table = _table(
-                        ["ID", "数据名", "分类", "值", "单位", "记录时间", "操作人", "记录ID", "备注"],
-                        [
-                            [
-                                r["id"],
-                                r["data_name"],
-                                r["category_name"],
-                                r["value"],
-                                r["unit"],
-                                r["recorded_at"],
-                                r["operator"],
-                                r["record_id"] or "",
-                                r["remarks"] or "",
-                            ]
-                            for r in rows
-                        ],
-                    )
+                    rows = system.data.query_data(category_id=int(cat) if cat else None, keyword=keyword or None, date_start=date_start or None, date_end=date_end or None, owner_id=user_id)
+                    table = _table(["ID", "数据名", "分类", "值", "单位", "记录时间", "操作人", "记录ID", "备注"], [[r["id"], r["data_name"], r["category_name"], r["value"], r["unit"], r["recorded_at"], r["operator"], r["record_id"] or "", r["remarks"] or ""] for r in rows])
 
                 body = f"""
                 <div class='card'>
                   <h2>数据查询与统计</h2>
-                  <form method='get'>
-                    <input name='category_id' placeholder='分类ID' value='{escape(cat)}' />
-                    <input name='keyword' placeholder='关键字' value='{escape(keyword)}' />
-                    <input name='date_start' placeholder='开始时间' value='{escape(date_start)}' />
-                    <input name='date_end' placeholder='结束时间' value='{escape(date_end)}' />
+                  <form method='get' class='form-grid'>
+                    <div class='form-field'><label>分类ID</label><input name='category_id' value='{escape(cat)}' /></div>
+                    <div class='form-field'><label>关键字</label><input name='keyword' value='{escape(keyword)}' /></div>
+                    <div class='form-field'><label>开始时间</label><input name='date_start' value='{escape(date_start)}' /></div>
+                    <div class='form-field'><label>结束时间</label><input name='date_end' value='{escape(date_end)}' /></div>
                     <button type='submit' name='mode' value='query'>查询</button>
-                    <button type='submit' name='mode' value='stats'>分类统计</button>
+                    <button class='secondary' type='submit' name='mode' value='stats'>分类统计</button>
                   </form>
                 </div>
                 <div class='card'>{table}</div>
                 """
-                html = _layout("查询统计", body, username)
+                html = _layout("查询统计", body, path, username)
 
             elif path == "/export":
                 if method == "POST":
@@ -386,17 +405,14 @@ def create_app(system: ExperimentDataSystem):
                 <div class='card'>
                   <h2>数据导出</h2>
                   {f"<div class='msg'>{escape(msg)}</div>" if msg else ""}
-                  <form method='post'>
-                    <select name='fmt'>
-                      <option value='json'>json</option>
-                      <option value='csv'>csv</option>
-                    </select>
-                    <input name='output_path' value='exports/all_data.json' style='min-width:300px' />
+                  <form method='post' class='form-grid'>
+                    <div class='form-field'><label>格式</label><select name='fmt'><option value='json'>json</option><option value='csv'>csv</option></select></div>
+                    <div class='form-field'><label>路径</label><input name='output_path' value='exports/all_data.json' /></div>
                     <button type='submit'>导出</button>
                   </form>
                 </div>
                 """
-                html = _layout("数据导出", body, username)
+                html = _layout("数据导出", body, path, username)
 
             else:
                 start_response("404 Not Found", [("Content-Type", "text/plain; charset=utf-8")])
@@ -406,12 +422,12 @@ def create_app(system: ExperimentDataSystem):
             return [html.encode("utf-8")]
 
         except ValueError as exc:
-            html = _layout("错误", f"<div class='card'><h2>操作失败</h2><div class='err'>{escape(str(exc))}</div></div>", username)
+            html = _layout("错误", f"<div class='card'><h2>操作失败</h2><div class='err'>{escape(str(exc))}</div></div>", path, username)
             start_response("400 Bad Request", [("Content-Type", "text/html; charset=utf-8")])
             return [html.encode("utf-8")]
         except Exception:
             logger.exception("Unhandled error in web UI")
-            html = _layout("错误", "<div class='card'><h2>服务内部错误</h2><div class='err'>请稍后重试。</div></div>", username)
+            html = _layout("错误", "<div class='card'><h2>服务内部错误</h2><div class='err'>请稍后重试。</div></div>", path, username)
             start_response("500 Internal Server Error", [("Content-Type", "text/html; charset=utf-8")])
             return [html.encode("utf-8")]
 
