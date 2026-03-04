@@ -1,0 +1,34 @@
+{% extends 'ui/base.html' %}
+{% block title %}计划管理{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>实验计划管理</h2>
+  <p>维护实验目标、时间范围与状态。</p>
+</div>
+
+<div class="card">
+  <form method="post" class="form-grid">
+    <input name="title" placeholder="计划标题" required />
+    <input name="objective" placeholder="实验目标" required />
+    <input name="start_date" type="date" />
+    <input name="end_date" type="date" />
+    <select name="status">
+      <option value="draft">草稿</option>
+      <option value="active">执行中</option>
+      <option value="done">完成</option>
+    </select>
+    <button type="submit">新增计划</button>
+  </form>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <tr><th>ID</th><th>标题</th><th>目标</th><th>状态</th><th>起止日期</th></tr>
+    {% for p in plans %}
+    <tr><td>{{ p.id }}</td><td>{{ p.title }}</td><td>{{ p.objective }}</td><td>{{ p.status }}</td><td>{{ p.start_date or '-' }} ~ {{ p.end_date or '-' }}</td></tr>
+    {% else %}
+    <tr><td colspan="5" class="empty">暂无实验计划，请先创建。</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

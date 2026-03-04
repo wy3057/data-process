@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}实验过程管理系统{% endblock %}</title>
+    <style>
+      :root {
+        --bg: #f3f6fb;
+        --card: #ffffff;
+        --line: #e5e9f2;
+        --text: #1f2937;
+        --muted: #64748b;
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --success-bg: #ecfdf3;
+        --success-text: #166534;
+        --danger-bg: #fef2f2;
+        --danger-text: #991b1b;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .topbar-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .brand {
+        font-weight: 700;
+        color: #0f172a;
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .nav-links a {
+        color: #334155;
+        text-decoration: none;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+
+      .nav-links a:hover,
+      .nav-links a.active {
+        background: #dbeafe;
+        color: #1e3a8a;
+      }
+
+      .container {
+        max-width: 1120px;
+        margin: 18px auto;
+        padding: 0 16px 24px;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      }
+
+      .page-header {
+        margin-bottom: 12px;
+      }
+
+      .page-header h2 {
+        margin: 0 0 6px;
+        font-size: 24px;
+      }
+
+      .page-header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+
+      .metric-title { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+      .metric-value { font-size: 28px; font-weight: 700; color: #0f172a; }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 10px;
+      }
+
+      input, select, textarea, button {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 9px 10px;
+        font-size: 14px;
+        background: #fff;
+      }
+
+      textarea { min-height: 94px; resize: vertical; }
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+
+      button {
+        border: none;
+        background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      button:hover { opacity: 0.95; }
+
+      .table-wrap {
+        margin-top: 12px;
+        overflow-x: auto;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 700px;
+      }
+
+      th, td {
+        border-bottom: 1px solid #eef2f7;
+        padding: 10px;
+        text-align: left;
+        vertical-align: top;
+        font-size: 14px;
+      }
+
+      th {
+        background: #f8fafc;
+        color: #334155;
+        font-weight: 600;
+      }
+
+      .flash {
+        padding: 10px 12px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border: 1px solid transparent;
+      }
+
+      .flash.success {
+        background: var(--success-bg);
+        color: var(--success-text);
+        border-color: #bbf7d0;
+      }
+
+      .flash.danger {
+        background: var(--danger-bg);
+        color: var(--danger-text);
+        border-color: #fecaca;
+      }
+
+      .login-shell {
+        max-width: 460px;
+        margin: 80px auto;
+      }
+
+      .hint { color: var(--muted); font-size: 13px; }
+
+      .quick-links {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .quick-links a {
+        text-decoration: none;
+        color: #1e3a8a;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        padding: 10px;
+        font-size: 14px;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .logout-btn {
+        width: auto;
+        white-space: nowrap;
+        padding: 8px 12px;
+      }
+
+      .empty {
+        color: var(--muted);
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    {% if current_user.is_authenticated %}
+    <div class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="{{ url_for('web.dashboard') }}">实验过程管理系统</a>
+        <div class="actions">
+          <nav class="nav-links">
+            <a href="{{ url_for('web.dashboard') }}">首页</a>
+            <a href="{{ url_for('web.plans_page') }}">计划</a>
+            <a href="{{ url_for('web.tasks_page') }}">任务</a>
+            <a href="{{ url_for('web.records_page') }}">流程记录</a>
+            <a href="{{ url_for('web.progress_page') }}">进度</a>
+            <a href="{{ url_for('web.reports_page') }}">报告</a>
+          </nav>
+          <form method="post" action="{{ url_for('web.logout') }}">
+            <button class="logout-btn" type="submit">退出（{{ current_user.username }}）</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </body>
+</html>

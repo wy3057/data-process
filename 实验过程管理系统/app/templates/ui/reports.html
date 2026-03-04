@@ -1,0 +1,32 @@
+{% extends 'ui/base.html' %}
+{% block title %}报告管理{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>实验报告管理</h2>
+  <p>汇总结论并挂接附件，形成过程沉淀。</p>
+</div>
+
+<div class="card">
+  <form method="post" class="form-grid">
+    <input name="title" placeholder="报告标题" required />
+    <input name="attachment" placeholder="附件路径 / URL" />
+    <textarea name="conclusion" placeholder="实验结论" required></textarea>
+    <select name="task_id" required>
+      <option value="">选择任务</option>
+      {% for t in tasks %}<option value="{{ t.id }}">{{ t.name }} (#{{ t.id }})</option>{% endfor %}
+    </select>
+    <button type="submit">新增报告</button>
+  </form>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <tr><th>ID</th><th>标题</th><th>结论</th><th>附件</th><th>任务ID</th></tr>
+    {% for r in reports %}
+    <tr><td>{{ r.id }}</td><td>{{ r.title }}</td><td>{{ r.conclusion }}</td><td>{{ r.attachment or '-' }}</td><td>{{ r.task_id }}</td></tr>
+    {% else %}
+    <tr><td colspan="5" class="empty">暂无报告记录。</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'ui/base.html' %}
+{% block title %}仪表盘 - 实验过程管理系统{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>实验过程管理仪表盘</h2>
+  <p>快速查看当前账号下各模块的数据总览与入口。</p>
+</div>
+
+<div class="grid">
+  <div class="card"><div class="metric-title">计划总数</div><div class="metric-value">{{ stats.plans }}</div></div>
+  <div class="card"><div class="metric-title">任务总数</div><div class="metric-value">{{ stats.tasks }}</div></div>
+  <div class="card"><div class="metric-title">流程记录</div><div class="metric-value">{{ stats.records }}</div></div>
+  <div class="card"><div class="metric-title">进度记录</div><div class="metric-value">{{ stats.progress }}</div></div>
+  <div class="card"><div class="metric-title">实验报告</div><div class="metric-value">{{ stats.reports }}</div></div>
+</div>
+
+<div class="quick-links">
+  <a href="{{ url_for('web.plans_page') }}">→ 进入计划管理，创建实验计划</a>
+  <a href="{{ url_for('web.tasks_page') }}">→ 进入任务管理，拆解计划任务</a>
+  <a href="{{ url_for('web.records_page') }}">→ 进入流程记录，登记执行过程</a>
+  <a href="{{ url_for('web.progress_page') }}">→ 进入进度管理，跟踪推进状态</a>
+  <a href="{{ url_for('web.reports_page') }}">→ 进入报告管理，沉淀结果输出</a>
+</div>
+{% endblock %}

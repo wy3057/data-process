@@ -1,0 +1,34 @@
+{% extends 'ui/base.html' %}
+{% block title %}任务管理{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>实验任务管理</h2>
+  <p>将实验计划拆解为可执行任务并分配负责人。</p>
+</div>
+
+<div class="card">
+  <form method="post" class="form-grid">
+    <input name="name" placeholder="任务名称" required />
+    <input name="description" placeholder="任务描述" />
+    <input name="assignee" placeholder="负责人" />
+    <input name="deadline" type="date" />
+    <select name="status"><option value="pending">待处理</option><option value="doing">进行中</option><option value="done">完成</option></select>
+    <select name="plan_id" required>
+      <option value="">选择所属计划</option>
+      {% for p in plans %}<option value="{{ p.id }}">{{ p.title }} (#{{ p.id }})</option>{% endfor %}
+    </select>
+    <button type="submit">新增任务</button>
+  </form>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <tr><th>ID</th><th>任务</th><th>计划ID</th><th>状态</th><th>负责人</th><th>截止</th></tr>
+    {% for t in tasks %}
+    <tr><td>{{ t.id }}</td><td>{{ t.name }}</td><td>{{ t.plan_id }}</td><td>{{ t.status }}</td><td>{{ t.assignee or '-' }}</td><td>{{ t.deadline or '-' }}</td></tr>
+    {% else %}
+    <tr><td colspan="6" class="empty">暂无任务，请先创建任务。</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
