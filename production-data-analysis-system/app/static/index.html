@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>生产数据分析系统</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero card">
+        <div>
+          <h1>生产数据分析系统</h1>
+          <p>支持多用户登录、生产采集、统计分析、可视化、记录管理与报表导出</p>
+        </div>
+        <div class="hero-actions">
+          <button id="refresh-all" type="button" class="btn-secondary">一键刷新</button>
+          <span id="current-user" class="muted">未登录</span>
+          <span id="last-updated" class="muted">尚未刷新</span>
+        </div>
+      </header>
+
+      <section class="card" id="auth-card">
+        <h2>用户登录 / 注册</h2>
+        <form id="auth-form" class="grid auth-grid">
+          <label>用户名<input type="text" id="auth-username" required /></label>
+          <label>密码<input type="password" id="auth-password" required /></label>
+          <div class="filter-actions full">
+            <button type="submit" id="login-btn">登录</button>
+            <button type="button" id="register-btn" class="btn-secondary">注册</button>
+            <button type="button" id="logout-btn" class="btn-light">退出</button>
+          </div>
+        </form>
+        <p id="auth-message" class="feedback"></p>
+      </section>
+
+      <div id="app-content" class="hidden">
+        <section class="card">
+          <h2>记录筛选</h2>
+          <form id="filter-form" class="grid form-grid">
+            <label>开始日期<input type="date" id="filter_start_date" /></label>
+            <label>结束日期<input type="date" id="filter_end_date" /></label>
+            <label>产线关键字<input type="text" id="filter_line_name" placeholder="例如：A线" /></label>
+            <label>产品关键字<input type="text" id="filter_product_name" placeholder="例如：电机" /></label>
+            <div class="filter-actions full">
+              <button type="submit" class="btn-secondary">应用筛选</button>
+              <button type="button" id="reset-filter" class="btn-light">重置</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>生产数据采集</h2>
+          <form id="record-form" class="grid form-grid">
+            <label>生产日期<input type="date" id="production_date" required /></label>
+            <label>产线<input type="text" id="line_name" placeholder="例如：A线" required /></label>
+            <label>产品<input type="text" id="product_name" placeholder="例如：电机壳体" required /></label>
+            <label>产量<input type="number" id="output_quantity" placeholder="0" min="0" required /></label>
+            <label>不良数<input type="number" id="defect_quantity" placeholder="0" min="0" value="0" required /></label>
+            <label>单件成本<input type="number" id="unit_cost" placeholder="0.00" min="0" step="0.01" required /></label>
+            <label class="full">备注<input type="text" id="note" placeholder="可选" /></label>
+            <button type="submit">提交记录</button>
+          </form>
+          <p id="form-message" class="feedback"></p>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <h2>数据统计分析</h2>
+            <button id="refresh-summary" type="button" class="btn-secondary">刷新统计</button>
+          </div>
+          <div id="summary-box" class="kpi-grid"></div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <h2>数据可视化（按天）</h2>
+            <span class="muted">最近数据趋势</span>
+          </div>
+          <div id="trend-chart" class="chart"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>日期</th><th>总产量</th><th>不良数</th></tr>
+              </thead>
+              <tbody id="viz-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <h2>生产记录管理</h2>
+            <button id="refresh-records" type="button" class="btn-secondary">刷新记录</button>
+          </div>
+          <div id="records-state" class="muted"></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>日期</th><th>产线</th><th>产品</th><th>产量</th><th>不良</th><th>单件成本</th><th>备注</th><th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="records-table"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <button type="button" id="prev-page" class="btn-light">上一页</button>
+            <span id="page-info" class="muted">第 1 页</span>
+            <button type="button" id="next-page" class="btn-light">下一页</button>
+          </div>
+        </section>
+
+        <section class="card report-links">
+          <h2>数据报表生成</h2>
+          <button id="download-json" type="button" class="btn-secondary">下载 JSON 报表</button>
+          <button id="download-csv" type="button" class="btn-secondary">下载 CSV 报表</button>
+        </section>
+      </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
