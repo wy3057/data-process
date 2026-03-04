@@ -1,0 +1,32 @@
+{% extends 'ui/base.html' %}
+{% block title %}进度管理{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>实验进度管理</h2>
+  <p>按任务维度记录完成百分比、进展说明与风险。</p>
+</div>
+
+<div class="card">
+  <form method="post" class="form-grid">
+    <input name="percent" type="number" min="0" max="100" placeholder="进度百分比" required />
+    <input name="summary" placeholder="进度说明" required />
+    <input name="risk" placeholder="风险说明" />
+    <select name="task_id" required>
+      <option value="">选择任务</option>
+      {% for t in tasks %}<option value="{{ t.id }}">{{ t.name }} (#{{ t.id }})</option>{% endfor %}
+    </select>
+    <button type="submit">新增进度</button>
+  </form>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <tr><th>ID</th><th>进度</th><th>说明</th><th>风险</th><th>任务ID</th></tr>
+    {% for e in entries %}
+    <tr><td>{{ e.id }}</td><td>{{ e.percent }}%</td><td>{{ e.summary }}</td><td>{{ e.risk or '-' }}</td><td>{{ e.task_id }}</td></tr>
+    {% else %}
+    <tr><td colspan="5" class="empty">暂无进度记录。</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

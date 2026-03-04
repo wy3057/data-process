@@ -1,0 +1,32 @@
+{% extends 'ui/base.html' %}
+{% block title %}流程记录{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h2>实验流程记录</h2>
+  <p>记录每个任务在执行过程中的步骤与说明。</p>
+</div>
+
+<div class="card">
+  <form method="post" class="form-grid">
+    <input name="step_name" placeholder="步骤名称" required />
+    <input name="operator" placeholder="操作人" />
+    <textarea name="details" placeholder="步骤详情" required></textarea>
+    <select name="task_id" required>
+      <option value="">选择任务</option>
+      {% for t in tasks %}<option value="{{ t.id }}">{{ t.name }} (#{{ t.id }})</option>{% endfor %}
+    </select>
+    <button type="submit">新增流程记录</button>
+  </form>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <tr><th>ID</th><th>步骤</th><th>详情</th><th>操作人</th><th>任务ID</th><th>记录时间</th></tr>
+    {% for r in records %}
+    <tr><td>{{ r.id }}</td><td>{{ r.step_name }}</td><td>{{ r.details }}</td><td>{{ r.operator or '-' }}</td><td>{{ r.task_id }}</td><td>{{ r.record_time }}</td></tr>
+    {% else %}
+    <tr><td colspan="6" class="empty">暂无流程记录。</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
